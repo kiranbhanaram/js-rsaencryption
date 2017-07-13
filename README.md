@@ -1,6 +1,6 @@
 # JS RSA Encryption
 
-by [Ivo Moor](mailto: ivo.moor@just-bi.nl)
+by [Ivo Moor](mailto:ivo.moor@just-bi.nl)
 
 ## Index
 
