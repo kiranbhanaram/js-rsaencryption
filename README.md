@@ -34,8 +34,10 @@ See the 'Usage' section to find out how the library can be used. Alternatively y
 
 - [jQuery library](https://jquery.com/)<br>
   The jQuery library is used to create promisses
+<br><br>
 - [CryptoJS library](https://github.com/gwjjeff/cryptojs)<br>
   The AES encryption in JavaScript requires the CryptoJS library which is also included in teh demo_app folder.
+<br><br>
 - RSA Key Pair<br>
   In order to encrypt text using the RSA algorithm, a public key is required. Information about generating a RSA key pair is explained in
   detail in related repo [Cordova RSA Certificate](https://github.com/just-bi/cordova-plugin-certificate).
