@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+      font-family: Verdana;
+      font-size: 9px;
+    }
+
+    .app_container {
+      width: 1500px;
+    }
+
+    .group {
+      width: 490px;
+      border: 1px dashed lightgrey;
+      padding: 10px;
+      box-sizing: border-box;
+      margin-top: 10px;
+      display: inline-block;
+      vertical-align: top;
+    }
+
+    .group span {
+      font-weight: bold;
+    }
+
+    .parameter {
+      display: block;
+      padding: 11px;
+    }
+
+    .parameter_description {
+      display: block;
+      padding: 0;
+    }
+
+    .parameter_description span {
+      font-weight: normal;
+    }
+
+    .parameter_name {
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    .parameter_text {
+      width: 440px;
+      height: 150px;
+      resize: none;
+      font-family: "Courier New", Courier, "Lucida Sans Typewriter", "Lucida Typewriter", monospace;
+      font-size: 11px;
+    }
+
+    .input_button {
+      margin-top: 40px;
+      text-align: right;
+    }
+  </style>
+  <script src="js/jquery/jquery.min.js"></script>
+  <script src="js/crypto-js/Crypto.js"></script>
+  <script src="js/crypto-js/AES.js"></script>
+  <script src="js/crypto-js/BlockModes.js"></script>
+  <script src="js/jbi_encryption.js"></script>
+  <script>
+    $(document).ready(function () {
+      $("#btnEncryptMessage").on("click", encryptText);
+      $("#btnUploadPEM").on("click", uploadPEM);
+      $("#btnDownloadOutput").on("click", downloadOutput);
+      $("#fileUploadPEM").on("change", parsePEMFile)
+    });
+
+
+    /**
+     * Encrypt a text using RSA and AES
+     * Steps executed in the encryption:
+     * - Generate a password (16 characters)
+     * - Generate a initialization vector (16 characters)
+     * - Encrypts the plain text using AES encryption, using the password and initialization vector
+     * - Encrypts the concatenation of the password and initialization vector using RSA encryption, using the Public key
+     * - Returns the AES encrypted message as 'text' and the RSA encrypted password and iv as 'key'
+     */
+    function encryptText() {
+      var rsaPublicKey = $("#txtRSAPublicKey").val();
+      var plainText = $('#txtPlainText').val();
+
+      justbi.encryption.rsa.encryptText(plainText, rsaPublicKey).then(
+          function (encryptedText) {
+            $("#txtOutputFileContents").val(JSON.stringify(encryptedText, null, 4));
+          },
+          function (err) {
+            $("#txtOutputFileContents").val(err)
+          }
+      );
+    }
+
+
+    /**
+     * Trigger a click on the file input button
+     **/
+    function uploadPEM() {
+      $("#fileUploadPEM").trigger("click");
+    }
+
+
+    /**
+     * Read the file content and display it in the text area
+     **/
+    function parsePEMFile(evt) {
+      var files = evt.target.files; // FileList object
+      var f = files[0];
+
+      var reader = new FileReader();
+      reader.onload = (function (theFile) {
+        return function (e) {
+          $("#txtRSAPublicKey").val(e.target.result)
+        };
+      })(f);
+      reader.readAsText(f);
+    }
+
+
+    /**
+     * Download the contents of the output text box as a data.jbi file
+     */
+    function downloadOutput() {
+      var fileName = "data.jbi",
+          fileContents = $("#txtOutputFileContents").val();
+
+      // only proceed if there is data
+      if (fileContents === "") {
+        alert("Nothing to download...");
+        return;
+      }
+
+      // create the blob (file contents)
+      var blob = new Blob([fileContents], {type: 'text/json'}),
+          e = document.createEvent('MouseEvents'),
+          a = document.createElement('a');
+
+      // simulate a click;
+      a.download = fileName;
+      a.href = window.URL.createObjectURL(blob);
+      a.dataset.downloadurl = ['text/json', a.download, a.href].join(':');
+      e.initMouseEvent('click', true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
+      a.dispatchEvent(e)
+    }
+
+  </script>
+</head>
+<body>
+
+<div class="app">
+  <h1>Data Encryption</h1>
+  <div class="app_container">
+    <div class="group">
+      <div>
+        <span>INPUT</span>
+      </div>
+      <div class="parameter">
+        <div class="parameter_name">
+          <span>Plain Text</span>
+        </div>
+        <div class="parameter_description">
+          <span>The plain text is the text that will be encrypted.</span>
+        </div>
+        <div class="parameter_value">
+          <textarea id="txtPlainText" class="parameter_text"></textarea>
+        </div>
+      </div>
+      <div class="parameter">
+        <div class="parameter_name">
+          <span>RSA Public key</span>
+        </div>
+        <div class="parameter_description">
+          <span>This is the RSA Public Key (the pem file) that will be used to encrypt the AES generated password and initialization vector. The RSA Public key can only be used for encryption. In order to decrypt the text, the related private key is required.</span>
+        </div>
+        <div class="parameter_value">
+          <textarea id="txtRSAPublicKey" class="parameter_text"></textarea>
+        </div>
+        <button type="button" id="btnUploadPEM">Upload PEM file</button>
+        <input type="file" id="fileUploadPEM" style="display:none;">
+      </div>
+      <div class="input_button">
+        <button type="button" id="btnEncryptMessage">Encrypt Message</button>
+      </div>
+    </div>
+    <div class="group">
+      <div>
+        <span>OUTPUT</span>
+      </div>
+      <div class="parameter">
+        <div class="parameter_name">
+          <span>Encrypted Text:</span>
+        </div>
+        <div class="parameter_description">
+          <span>The encrypted text is a JSON object containing a property named 'key' which holds the RSA encrypted AES key and Initialization Vector (both 16 characters) and a property named 'text' which contains the AES encrypted message.</span>
+        </div>
+        <div>
+          <textarea readonly id="txtOutputFileContents" class="parameter_text"></textarea>
+        </div>
+        <button type="button" id="btnDownloadOutput">Download Output</button>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
